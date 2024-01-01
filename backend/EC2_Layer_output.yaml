@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: EC2_Layer Template
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+    - t2.micro
+    - m1.small
+    - m1.large
+  AmiID:
+    Description: Please input Ami ID
+    Type: AWS::EC2::Image::Id
+    Default: ami-0d758d8f848cacaf5
+  KeyPair:
+    Description: Please input KeyPair name
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: YUKI_ONO
+Resources:
+  DevEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      NetworkInterfaces:
+      - SubnetId:
+          Fn::ImportValue: NetworkLayer-PublicSubnetA
+        GroupSet:
+        - Fn::ImportValue: SecurityLayer-SecurityGroupEC2
+        DeviceIndex: 0
+      InstanceType:
+        Ref: InstanceType
+      ImageId:
+        Ref: AmiID
+      Tags:
+      - Key: Name
+        Value: DevEC2
+      KeyName:
+        Ref: KeyPair
+  EC2EIPAttouch:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId:
+        Fn::ImportValue: NetworkLayer-EIP
+      InstanceId:
+        Ref: DevEC2

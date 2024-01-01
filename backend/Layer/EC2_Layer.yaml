@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: EC2_Layer Template
+
+# ------------------------------------------------------------#
+#  Parameters
+# ------------------------------------------------------------#
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - m1.small
+      - m1.large
+  AmiID:
+    Description: Please input Ami ID
+    Type: AWS::EC2::Image::Id
+    Default: ami-0d758d8f848cacaf5
+  KeyPair:
+    Description: Please input KeyPair name
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: YUKI_ONO
+
+Resources:
+# ------------------------------------------------------------#
+#  EC2
+# ------------------------------------------------------------#
+  DevEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      NetworkInterfaces:
+        - SubnetId: !ImportValue NetworkLayer-PublicSubnetA
+          GroupSet:
+            - !ImportValue SecurityLayer-SecurityGroupEC2
+          DeviceIndex: 0
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref AmiID
+      Tags:
+        - Key: Name
+          Value: DevEC2
+      KeyName: !Ref KeyPair
+
+  # Elastic IPをEC2にアタッチ
+  EC2EIPAttouch:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !ImportValue NetworkLayer-EIP
+      InstanceId: !Ref DevEC2
+  # SampleEC21c:
+  #   Type: AWS::EC2::Instance
+  #   Properties:
+  #     NetworkInterfaces:
+  #       - SubnetId: !ImportValue NetworkLayer-PublicSubnet1c
+  #         GroupSet:
+  #           - !ImportValue SecurityLayer-SecurityGroupEC2
+  #         DeviceIndex: 0
+  #     InstanceType: !Ref InstanceType
+  #     ImageId: !Ref AmiID
+  #     Tags:
+  #       - Key: Name
+  #         Value: SampleEC21c
+  #     KeyName: !Ref KeyPair
+

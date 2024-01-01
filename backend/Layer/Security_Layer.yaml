@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Security_Layer Template
+
+Resources:
+# ------------------------------------------------------------#
+#  Security Group
+# ------------------------------------------------------------#
+  SecurityGroupLambda:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SecurityGroupLambda
+      GroupName: SecurityGroupLambda
+      Tags:
+        - Key: Name
+          Value: SecurityGroupLambda
+      VpcId: !ImportValue NetworkLayer-VPC
+  SecurityGroupEC2:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SecurityGroupEC2
+      GroupName: SecurityGroupEC2
+      SecurityGroupIngress:
+        # - IpProtocol: tcp
+        #   FromPort: 80
+        #   ToPort: 80
+        #   SourceSecurityGroupId: !Ref SecurityGroupALB
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: SecurityGroupEC2
+      VpcId: !ImportValue NetworkLayer-VPC
+  SecurityGroupRDS:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SecurityGroupRDS
+      GroupName: SecurityGroupRDS
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: SecurityGroupRDS
+      VpcId: !ImportValue NetworkLayer-VPC
+
+  # SecurityGroupALB:
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties:
+  #     GroupDescription: SecurityGroupALB
+  #     GroupName: SecurityGroupALB
+  #     SecurityGroupIngress:
+  #       - IpProtocol: tcp
+  #         FromPort: 80
+  #         ToPort: 80
+  #         CidrIp: 0.0.0.0/0
+  #     Tags:
+  #       - Key: Name
+  #         Value: SecurityGroupALB
+  #     VpcId: !ImportValue NetworkLayer-VPC
+
+
+# ------------------------------------------------------------#
+#  Output
+# ------------------------------------------------------------#
+Outputs:
+  SecurityGroupEC2:
+    Value: !Ref SecurityGroupEC2
+    Export:
+      Name: SecurityLayer-SecurityGroupEC2
+
+  SecurityGroupLambda:
+    Value: !Ref SecurityGroupLambda
+    Export:
+      Name: SecurityLayer-SecurityGroupLambda
+
+  SecurityGroupRDS:
+    Value: !Ref SecurityGroupRDS
+    Export:
+      Name: SecurityLayer-SecurityGroupRDS
+
+  # SecurityGroupALB:
+  #   Value: !Ref SecurityGroupALB
+  #   Export:
+  #     Name: SecurityLayer-SecurityGroupALB

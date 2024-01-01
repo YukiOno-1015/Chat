@@ -1,0 +1,213 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Network_Layer Template
+Parameters:
+  CidrBlock:
+    Description: Please input an IP range
+    Type: String
+    Default: 10.0.0.0/16
+  AvailabilityZone1:
+    Description: Please input Availability Zone
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: ap-northeast-1a
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock:
+        Ref: CidrBlock
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+      - Key: name
+        Value: VPC
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs: ''
+      CidrBlock:
+        Fn::Select:
+        - 0
+        - Fn::Cidr:
+          - Fn::GetAtt:
+            - VPC
+            - CidrBlock
+          - 1
+          - 8
+      VpcId:
+        Ref: VPC
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: name
+        Value: PublicSubnetA
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 1
+        - Fn::GetAZs: ''
+      CidrBlock:
+        Fn::Select:
+        - 1
+        - Fn::Cidr:
+          - Fn::GetAtt:
+            - VPC
+            - CidrBlock
+          - 2
+          - 8
+      VpcId:
+        Ref: VPC
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: name
+        Value: PublicSubnetB
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs: ''
+      CidrBlock:
+        Fn::Select:
+        - 2
+        - Fn::Cidr:
+          - Fn::GetAtt:
+            - VPC
+            - CidrBlock
+          - 3
+          - 8
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: name
+        Value: PrivateSubnetA
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 1
+        - Fn::GetAZs: ''
+      CidrBlock:
+        Fn::Select:
+        - 3
+        - Fn::Cidr:
+          - Fn::GetAtt:
+            - VPC
+            - CidrBlock
+          - 4
+          - 8
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: name
+        Value: PrivateSubnetB
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: InternetGateway
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: VPC
+      InternetGatewayId:
+        Ref: InternetGateway
+  PublicSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PublicSubnetA
+      RouteTableId:
+        Ref: PublicRouteTable
+  PublicSubnetBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PublicSubnetB
+      RouteTableId:
+        Ref: PublicRouteTable
+  PrivateSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PrivateSubnetA
+      RouteTableId:
+        Ref: PrivateRouteTable
+  PrivateSubnetBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PrivateSubnetB
+      RouteTableId:
+        Ref: PrivateRouteTable
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+  EIP:
+    Type: AWS::EC2::EIP
+  VPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      RouteTableIds:
+      - Ref: PrivateRouteTable
+      ServiceName: com.amazonaws.ap-northeast-1.s3
+      VpcEndpointType: Gateway
+      VpcId:
+        Ref: VPC
+Outputs:
+  VPC:
+    Value:
+      Ref: VPC
+    Export:
+      Name: NetworkLayer-VPC
+  PublicSubnetA:
+    Value:
+      Ref: PublicSubnetA
+    Export:
+      Name: NetworkLayer-PublicSubnetA
+  PublicSubnetB:
+    Value:
+      Ref: PublicSubnetB
+    Export:
+      Name: NetworkLayer-PublicSubnetB
+  PrivateSubnetA:
+    Value:
+      Ref: PrivateSubnetA
+    Export:
+      Name: NetworkLayer-PrivateSubnetA
+  PrivateSubnetB:
+    Value:
+      Ref: PrivateSubnetB
+    Export:
+      Name: NetworkLayer-PrivateSubnetB
+  EIP:
+    Value:
+      Fn::GetAtt:
+      - EIP
+      - AllocationId
+    Export:
+      Name: NetworkLayer-EIP

@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Security_Layer Template
+Resources:
+  SecurityGroupLambda:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SecurityGroupLambda
+      GroupName: SecurityGroupLambda
+      Tags:
+      - Key: Name
+        Value: SecurityGroupLambda
+      VpcId:
+        Fn::ImportValue: NetworkLayer-VPC
+  SecurityGroupEC2:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SecurityGroupEC2
+      GroupName: SecurityGroupEC2
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 0.0.0.0/0
+      Tags:
+      - Key: Name
+        Value: SecurityGroupEC2
+      VpcId:
+        Fn::ImportValue: NetworkLayer-VPC
+  SecurityGroupRDS:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SecurityGroupRDS
+      GroupName: SecurityGroupRDS
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 3306
+        ToPort: 3306
+        CidrIp: 0.0.0.0/0
+      Tags:
+      - Key: Name
+        Value: SecurityGroupRDS
+      VpcId:
+        Fn::ImportValue: NetworkLayer-VPC
+Outputs:
+  SecurityGroupEC2:
+    Value:
+      Ref: SecurityGroupEC2
+    Export:
+      Name: SecurityLayer-SecurityGroupEC2
+  SecurityGroupLambda:
+    Value:
+      Ref: SecurityGroupLambda
+    Export:
+      Name: SecurityLayer-SecurityGroupLambda
+  SecurityGroupRDS:
+    Value:
+      Ref: SecurityGroupRDS
+    Export:
+      Name: SecurityLayer-SecurityGroupRDS

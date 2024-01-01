@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Iam_Layer Template
+
+Resources:
+# ------------------------------------------------------------#
+# Role
+# ------------------------------------------------------------#
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:*
+                  - sms:*
+                  - apigateway:*
+                  - events:*
+                  - s3:GetObject
+                  - s3:PutObject
+                  - mobiletargeting:*
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+      Tags:
+        - Key: name
+          Value: LambdaRole
+
+
+# ------------------------------------------------------------#
+# Outputs
+# ------------------------------------------------------------#
+Outputs:
+  LambdaRole:
+    Value: !Ref LambdaRole
+    Export:
+      Name: IamLayer-LambdaRole
+  LambdaRoleArn:
+    Value: !GetAtt LambdaRole.Arn
+    Export:
+      Name: IamLayer-LambdaRoleArn
+  # LambdaPolicy:
+  #   Value: !GetAtt LambdaPolicy
+  #   Export:
+  #     Name: IamLayer-LambdaPolicy

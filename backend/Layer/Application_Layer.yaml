@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: Application_Layer Template
+
+Globals:
+  Function:
+    Timeout: 120
+    MemorySize: 512
+    Handler: handler.main
+    Runtime: python3.10
+    Role:
+        - !ImportValue IamLayer-LambdaRoleArn
+    Policies:
+        - !ImportValue IamLayer-LambdaPolicy
+    VpcConfig:
+      SecurityGroupIds:
+        - !ImportValue SecurityLayer-SecurityGroupLambda # WebSecurityGroupと紐付け
+      SubnetIds:
+        - !ImportValue NetworkLayer-PrivateSubnetA #Subnet(private)と紐付け
+        - !ImportValue NetworkLayer-PrivateSubnetB #Subnet(private)と紐付け
+    Layers:
+      - !Ref MyLayer
+
+Resources:
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      DefinitionUri: swagger.yaml
+      EndpointConfiguration: REGIONAL
+      # Domain:
+      #   DomainName: api.sk4869.info
+      #   CertificateArn: arn:aws:acm:REGION:ACCOUNT:certificate/CERTIFICATE_ID
+      #   BasePath:
+      #     - /
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "/*"
+          LoggingLevel: INFO
+          DataTraceEnabled: true
+          ThrottlingBurstLimit: 5000
+          ThrottlingRateLimit: 10000
+
+  MyFunctionApiEvent:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: MyFunction
+      Events:
+        MyApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /mypath
+            Method: ANY
+
+  SampleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../src/sample
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /mypath
+            Method: GET
+            RestApiId:
+              Ref: MyApi
+
+  MyLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: MyLayer
+      Description: My custom runtime layer
+      ContentUri: ../src/layer
+      CompatibleRuntimes:
+        - python3.10
+      LicenseInfo: MIT
+      RetentionPolicy: Retain
