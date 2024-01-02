@@ -1,26 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: EC2_Layer Template
 
-# ------------------------------------------------------------#
-#  Parameters
-# ------------------------------------------------------------#
-Parameters:
-  InstanceType:
-    Type: String
-    Default: t2.micro
-    AllowedValues:
-      - t2.micro
-      - m1.small
-      - m1.large
-  AmiID:
-    Description: Please input Ami ID
-    Type: AWS::EC2::Image::Id
-    Default: ami-0d758d8f848cacaf5
-  KeyPair:
-    Description: Please input KeyPair name
-    Type: AWS::EC2::KeyPair::KeyName
-    Default: YUKI_ONO
-
 Resources:
 # ------------------------------------------------------------#
 #  EC2
@@ -33,12 +13,37 @@ Resources:
           GroupSet:
             - !ImportValue SecurityLayer-SecurityGroupEC2
           DeviceIndex: 0
-      InstanceType: !Ref InstanceType
-      ImageId: !Ref AmiID
+      LaunchTemplate:
+        LaunchTemplateId: !ImportValue EC2TemplateLayer-LaunchTemplate
+        Version: 1
+      UserData:      #ここにユーザーデータ入ってます
+        Fn::Base64: |
+            #!/bin/bash
+            
+            groupadd honoka
+            useradd honoka -g honoka
+            gpasswd -a honoka wheel
+            echo sk4869sk | passwd --stdin honoka
+            cp -frv /home/ec2-user/.ssh /home/honoka/
+            chown -R honoka:honoka /home/honoka/.ssh
+            chmod 700 /home/honoka/.ssh
+            chmod 600 /home/honoka/.ssh/*
+            hostnamectl set-hostname devEC2
+            localectl set-locale LANG=ja_JP.UTF-8
+            timedatectl set-timezone Asia/Tokyo
+            dnf update -y
+            dnf -y install epel-release 
+            dnf -y install elrepo-release
+            dnf -y install https://rpms.remirepo.net/enterprise/remi-release-8.rpm
+            dnf -y install git vim curl wget podman podman-docker
+            curl -L https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+            chmod 755 /usr/local/bin/docker-compose
+            cp -p /etc/selinux/config /etc/selinux/config.org~
+            sed -i 's/\(^SELINUX=\)enforcing/\1disabled/' /etc/selinux/config
+            shutdown -r now
       Tags:
         - Key: Name
           Value: DevEC2
-      KeyName: !Ref KeyPair
 
   # Elastic IPをEC2にアタッチ
   EC2EIPAttouch:

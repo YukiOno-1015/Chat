@@ -78,4 +78,4 @@ delete:
 	@echo "Are you sure to delete the stack ${STACK_NAME}? [y/N] " && read ans && [ $${ans:-N} = y ]
 	aws cloudformation delete-stack --stack-name ${STACK_NAME} --profile ${PROFILE} --region ap-northeast-1
 
-all: check get_cert pac deploy change del_cert
+all: check get_cert pac deploy del_cert

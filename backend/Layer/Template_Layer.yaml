@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: EC2_Template_Layer Template
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - m1.small
+      - m1.large
+  AmiID:
+    Description: Please input Ami ID
+    Type: AWS::EC2::Image::Id
+    Default: ami-0d758d8f848cacaf5
+  KeyPair:
+    Description: Please input KeyPair name
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: YUKI_ONO
+
+Resources:
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        InstanceType: !Ref InstanceType
+        # NetworkInterfaces:
+        #   - DeviceIndex: 0
+        #     SubnetId: !ImportValue NetworkLayer-PublicSubnetA
+        # SecurityGroupIds:
+        #  - !ImportValue SecurityLayer-SecurityGroupEC2
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeType: gp3
+              VolumeSize: 100
+              DeleteOnTermination: true
+              Iops: 3000
+              Throughput: 250
+        ImageId: !Ref AmiID
+        KeyName: !Ref KeyPair
+
+Outputs:
+  LaunchTemplate:
+    Value: !Ref LaunchTemplate
+    Export:
+      Name: EC2TemplateLayer-LaunchTemplate

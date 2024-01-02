@@ -35,7 +35,7 @@ Resources:
                   - logs:PutLogEvents
                 Resource: "*"
       Tags:
-        - Key: name
+        - Key: Name
           Value: LambdaRole
 
 

@@ -19,7 +19,7 @@ Resources:
       EnableDnsHostnames: true
       InstanceTenancy: default
       Tags:
-      - Key: name
+      - Key: Name
         Value: VPC
   PublicSubnetA:
     Type: AWS::EC2::Subnet
@@ -41,7 +41,7 @@ Resources:
         Ref: VPC
       MapPublicIpOnLaunch: true
       Tags:
-      - Key: name
+      - Key: Name
         Value: PublicSubnetA
   PublicSubnetB:
     Type: AWS::EC2::Subnet
@@ -63,7 +63,7 @@ Resources:
         Ref: VPC
       MapPublicIpOnLaunch: true
       Tags:
-      - Key: name
+      - Key: Name
         Value: PublicSubnetB
   PrivateSubnetA:
     Type: AWS::EC2::Subnet
@@ -84,7 +84,7 @@ Resources:
       VpcId:
         Ref: VPC
       Tags:
-      - Key: name
+      - Key: Name
         Value: PrivateSubnetA
   PrivateSubnetB:
     Type: AWS::EC2::Subnet
@@ -105,7 +105,7 @@ Resources:
       VpcId:
         Ref: VPC
       Tags:
-      - Key: name
+      - Key: Name
         Value: PrivateSubnetB
   InternetGateway:
     Type: AWS::EC2::InternetGateway

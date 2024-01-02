@@ -26,7 +26,7 @@ Resources:
       EnableDnsHostnames: true
       InstanceTenancy: default
       Tags:
-        - Key: name
+        - Key: Name
           Value: VPC
 
 # ------------------------------------------------------------#
@@ -40,7 +40,7 @@ Resources:
       VpcId: !Ref VPC
       MapPublicIpOnLaunch: true
       Tags:
-        - Key: name
+        - Key: Name
           Value: PublicSubnetA
 
   PublicSubnetB:
@@ -51,7 +51,7 @@ Resources:
       VpcId: !Ref VPC
       MapPublicIpOnLaunch: true
       Tags:
-        - Key: name
+        - Key: Name
           Value: PublicSubnetB
 
   PrivateSubnetA:
@@ -61,7 +61,7 @@ Resources:
       CidrBlock: !Select [ 2, !Cidr [ !GetAtt VPC.CidrBlock, 3, 8 ]]
       VpcId: !Ref VPC
       Tags:
-        - Key: name
+        - Key: Name
           Value: PrivateSubnetA
 
   PrivateSubnetB:
@@ -71,7 +71,7 @@ Resources:
       CidrBlock: !Select [ 3, !Cidr [ !GetAtt VPC.CidrBlock, 4, 8 ]]
       VpcId: !Ref VPC
       Tags:
-        - Key: name
+        - Key: Name
           Value: PrivateSubnetB
 
 # ------------------------------------------------------------#
