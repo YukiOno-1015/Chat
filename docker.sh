@@ -8,4 +8,4 @@ docker run -dit --name demo -v ./src:/root/work/src -d demo /bin/bash
 docker ps -a
 docker exec -it demo /bin/bash
 rm -frv .aws
-rm -frv .config
+rm -frv .gitconfig
