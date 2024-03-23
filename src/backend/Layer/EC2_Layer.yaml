@@ -1,0 +1,110 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: EC2_Layer Template
+
+Resources:
+# ------------------------------------------------------------#
+#  EC2
+# ------------------------------------------------------------#
+  DevEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      NetworkInterfaces:
+        - SubnetId: !ImportValue NetworkLayer-PublicSubnetA
+          GroupSet:
+            - !ImportValue SecurityLayer-SecurityGroupEC2
+          DeviceIndex: 0
+      LaunchTemplate:
+        LaunchTemplateId: !ImportValue EC2TemplateLayer-LaunchTemplate
+        Version: 1
+      UserData:      #ここにユーザーデータ入ってます
+        Fn::Base64: |
+            #!/bin/bash
+            
+            groupadd honoka
+            useradd honoka -g honoka
+            gpasswd -a honoka wheel
+            echo sk4869sk | passwd --stdin honoka
+            cp -frv /home/ec2-user/.ssh /home/honoka/
+            chown -R honoka:honoka /home/honoka/.ssh
+            chmod 700 /home/honoka/.ssh
+            chmod 600 /home/honoka/.ssh/*
+            hostnamectl set-hostname devEC2
+            localectl set-locale LANG=ja_JP.UTF-8
+            timedatectl set-timezone Asia/Tokyo
+            cp -p /etc/selinux/config /etc/selinux/config.org~
+            sed -i 's/\(^SELINUX=\)enforcing/\1disabled/' /etc/selinux/config
+            # dnf update -y
+            # dnf -y install epel-release 
+            # dnf -y install elrepo-release
+            # dnf -y install https://rpms.remirepo.net/enterprise/remi-release-8.rpm
+            yum update -y --exclude=amazon-ssm-agent
+            amazon-linux-extras install -y epel
+            yum install -y openvpn easy-rsa --enablerepo=epel
+            cd /usr/share/easy-rsa/3
+            ./easyrsa init-pki
+            echo CA | ./easyrsa build-ca nopass
+            ./easyrsa gen-dh
+            ./easyrsa build-server-full server nopass
+            ./easyrsa build-client-full client001 nopass
+            cp /usr/share/doc/openvpn-${OpenVpnVersion}/sample/sample-config-files/server.conf /etc/openvpn/
+            sed -i "s/server 10.8.0.0 255.255.255.0/server ${ClientsVirtualNetworkAddress} 255.255.255.0/g" /etc/openvpn/server.conf
+            sed -i "s/;duplicate-cn/duplicate-cn/g" /etc/openvpn/server.conf
+            echo -e "\n\n" >> /etc/openvpn/server.conf
+            echo push \"redirect-gateway def1\" >> /etc/openvpn/server.conf
+            openvpn --genkey --secret /etc/openvpn/ta.key
+            cp /usr/share/easy-rsa/3/pki/ca.crt /etc/openvpn/
+            cp /usr/share/easy-rsa/3/pki/issued/server.crt /etc/openvpn/
+            cp /usr/share/easy-rsa/3/pki/private/server.key /etc/openvpn/
+            cp /usr/share/easy-rsa/3/pki/dh.pem /etc/openvpn/dh2048.pem
+            aws s3 cp /usr/share/easy-rsa/3/pki/ca.crt s3://ec2files-${S3BucketName}/
+            aws s3 cp /usr/share/easy-rsa/3/pki/private/client001.key s3://ec2files-${S3BucketName}/
+            aws s3 cp /usr/share/easy-rsa/3/pki/issued/client001.crt s3://ec2files-${S3BucketName}/
+            aws s3 cp /etc/openvpn/ta.key s3://ec2files-${S3BucketName}/
+            iptables -t nat -A POSTROUTING -s ${ClientsVirtualNetworkAddress}/24 -o eth0 -j MASQUERADE
+            echo iptables -t nat -A POSTROUTING -s ${ClientsVirtualNetworkAddress}/24 -o eth0 -j MASQUERADE >> /etc/rc.d/rc.local
+            chmod +x /etc/rc.d/rc.local
+            echo net.ipv4.ip_forward = 1 >> /etc/sysctl.conf
+            sysctl -p
+            systemctl start openvpn@server
+            systemctl enable openvpn@server
+            dnf -y install git vim curl wget zip unzip p7zip
+            # dnf -y install git vim curl wget podman podman-docker zip unzip p7zip
+            # curl -L https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+            # chmod 755 /usr/local/bin/docker-compose
+            # wget -c https://github.com/ogham/exa/releases/download/v0.10.1/exa-linux-x86_64-v0.10.1.zip
+            # unzip exa-linux-x86_64-v0.10.1.zip
+            # cp ./bin/exa /usr/local/bin/
+            # curl -L "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            # unzip awscliv2.zip
+            # ./aws/install
+            # rm -dev ./awscliv2.zip ./aws
+            # curl -OL https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip
+            # unzip aws-sam-cli-linux-x86_64.zip -d sam-installation
+            # ./sam-installation/install
+            # sam --version
+            # shutdown -r now
+      Tags:
+        - Key: Name
+          Value: DevEC2
+
+  # Elastic IPをEC2にアタッチ
+  EC2EIPAttouch:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !ImportValue NetworkLayer-EIP
+      InstanceId: !Ref DevEC2
+  # SampleEC21c:
+  #   Type: AWS::EC2::Instance
+  #   Properties:
+  #     NetworkInterfaces:
+  #       - SubnetId: !ImportValue NetworkLayer-PublicSubnet1c
+  #         GroupSet:
+  #           - !ImportValue SecurityLayer-SecurityGroupEC2
+  #         DeviceIndex: 0
+  #     InstanceType: !Ref InstanceType
+  #     ImageId: !Ref AmiID
+  #     Tags:
+  #       - Key: Name
+  #         Value: SampleEC21c
+  #     KeyName: !Ref KeyPair
+

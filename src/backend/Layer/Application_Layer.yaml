@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: Application_Layer Template
+
+Globals:
+  Api:
+    OpenApiVersion: 3.0.2
+  Function:
+    Timeout: 120
+    MemorySize: 512
+    Handler: handler.main
+    Runtime: python3.11
+    VpcConfig:
+      SecurityGroupIds:
+        - !ImportValue SecurityLayer-SecurityGroupLambda # WebSecurityGroupと紐付け
+      SubnetIds:
+        - !ImportValue NetworkLayer-PrivateSubnetA #Subnet(private)と紐付け
+        - !ImportValue NetworkLayer-PrivateSubnetB #Subnet(private)と紐付け
+    Layers:
+      - !Ref MyLayer
+
+Resources:
+  ApiGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !ImportValue IamLayer-LambdaRoleArn
+
+  RestApi:
+    Type: AWS::Serverless::Api
+    DependsOn: ApiGatewayAccount
+    Properties:
+      StageName: dev
+      OpenApiVersion: 3.0.2
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: ./swagger.yaml # API　Gatewayの構成のパス
+      EndpointConfiguration: REGIONAL
+      # Domain:
+      #   DomainName: api.sk4869.info
+      #   CertificateArn: arn:aws:acm:REGION:ACCOUNT:certificate/CERTIFICATE_ID
+      #   BasePath:
+      #     - /
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: true
+      AccessLogSetting:
+        DestinationArn: !GetAtt MyLogGroup.Arn
+        Format: $context.extendedRequestId $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId
+  MyLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join
+        - '-'
+        - - !Ref RestApi
+          - access-logs
+
+  SampleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: 'SampleFunction'
+      FunctionName: sample-function
+      Role: !ImportValue IamLayer-LambdaRoleArn
+      # Policies:
+      #     - !ImportValue IamLayer-LambdaPolicy
+      CodeUri: ../src/sample
+      Events:
+        Post:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: '/sample'
+            Method: POST
+        Get:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: '/sample'
+            Method: GET
+      Tags:
+        STAGE: dev
+
+  MyLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: MyLayer
+      Description: My custom runtime layer
+      ContentUri: ../src/layer
+      CompatibleRuntimes:
+        - python3.11
+      LicenseInfo: MIT
+      RetentionPolicy: Retain

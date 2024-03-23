@@ -1,0 +1,55 @@
+swagger: '2.0'
+info:
+  title: My REST API
+  description: A simple REST API using API Gateway and AWS Lambda
+  version: '1.0.0'
+schemes:
+  - http
+basePath: /
+produces:
+  - application/json
+x-amazon-apigateway-request-validators:
+  ValidateRequestBodyAndParams:
+    validateRequestBody: true
+    validateRequestParameters: true
+x-amazon-apigateway-request-validator: ValidateRequestBodyAndParams
+paths:
+  /sample:
+    post:
+      summary: Get MyPath
+      description: Retrieves information from MyPath
+      operationId: getMyPath
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SampleFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+        httpMethod: POST
+        type: aws_proxy
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Bad Request
+        '403':
+          description: Unable to determine service/operation name to be authorized
+        '500':
+          description: Internal Server Error
+    get:
+      summary: Get MyPath
+      description: Retrieves information from MyPath
+      operationId: getMyPath
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SampleFunction.Arn}/invocations
+        passthroughBehavior: when_no_match
+        httpMethod: POST
+        type: aws_proxy
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Bad Request
+        '403':
+          description: Unable to determine service/operation name to be authorized
+        '500':
+          description: Internal Server Error
